@@ -14,7 +14,11 @@ body {
   margin: auto;
   padding: 30px;
 }
-h1 { text-align: center; }
+
+h1 {
+  text-align: center;
+}
+
 .piece {
   background: white;
   padding: 20px;
@@ -22,9 +26,19 @@ h1 { text-align: center; }
   border-radius: 12px;
   box-shadow: 0 2px 8px #ccc;
 }
-audio { width: 100%; }
-.voice { margin: 12px 0; }
-.small { color: #666; font-size: 0.9em; }
+
+audio {
+  width: 100%;
+}
+
+.voice {
+  margin: 12px 0;
+}
+
+.small {
+  color: #666;
+  font-size: 0.9em;
+}
 </style>
 </head>
 
@@ -36,8 +50,8 @@ audio { width: 100%; }
 <div id="library">Loading audio files…</div>
 
 <script>
-const GITHUB_USER = "YOUR-GITHUB-USERNAME";
-const REPO_NAME = "YOUR-REPOSITORY-NAME";
+const GITHUB_USER = "jkelecom";
+const REPO_NAME = "Alauda";
 const BRANCH = "main";
 const AUDIO_FOLDER = "audio";
 
@@ -65,7 +79,7 @@ async function loadLibrary() {
   const folders = await fetch(apiBase).then(r => r.json());
 
   for (const folder of folders.filter(f => f.type === "dir")) {
-    const files = await fetch(`${apiBase}/${folder.name}`).then(r => r.json());
+    const files = await fetch(`${apiBase}/${encodeURIComponent(folder.name)}`).then(r => r.json());
     const mp3s = files.filter(f => f.name.toLowerCase().endsWith(".mp3"));
 
     const piece = document.createElement("div");
@@ -84,7 +98,7 @@ async function loadLibrary() {
 
       const audio = document.createElement("audio");
       audio.controls = true;
-      audio.src = `${rawBase}/${folder.name}/${mp3.name}`;
+      audio.src = mp3.download_url;
 
       voice.appendChild(label);
       voice.appendChild(audio);
