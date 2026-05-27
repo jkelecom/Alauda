@@ -1,21 +1,105 @@
-<audio controls>
-  <source src="ave-cantus.mp3" type="audio/mpeg">
-</audio>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Choir rehearsal aides</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<p>Altus</p>
-<audio controls>
-  <source src="ave-altus.mp3" type="audio/mpeg">
-</audio>
+<style>
+body {
+  font-family: Georgia, serif;
+  background: #f4f1ea;
+  color: #222;
+  max-width: 900px;
+  margin: auto;
+  padding: 30px;
+}
+h1 { text-align: center; }
+.piece {
+  background: white;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #ccc;
+}
+audio { width: 100%; }
+.voice { margin: 12px 0; }
+.small { color: #666; font-size: 0.9em; }
+</style>
+</head>
 
-<p>Tenor</p>
-<audio controls>
-  <source src="ave-tenor.mp3" type="audio/mpeg">
-</audio>
+<body>
 
-<p>Bassus</p>
-<audio controls>
-  <source src="ave-bassus.mp3" type="audio/mpeg">
-</audio>
+<h1>Choir rehearsal aides</h1>
+<p class="small">Select your part and press play.</p>
+
+<div id="library">Loading audio files…</div>
+
+<script>
+const GITHUB_USER = "YOUR-GITHUB-USERNAME";
+const REPO_NAME = "YOUR-REPOSITORY-NAME";
+const BRANCH = "main";
+const AUDIO_FOLDER = "audio";
+
+const apiBase = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${AUDIO_FOLDER}`;
+const rawBase = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/${BRANCH}/${AUDIO_FOLDER}`;
+
+function prettyTitle(folderName) {
+  return folderName
+    .replace(/^\d+[-_ ]*/, "")
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function prettyVoice(fileName) {
+  return fileName
+    .replace(/\.mp3$/i, "")
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+async function loadLibrary() {
+  const library = document.getElementById("library");
+  library.innerHTML = "";
+
+  const folders = await fetch(apiBase).then(r => r.json());
+
+  for (const folder of folders.filter(f => f.type === "dir")) {
+    const files = await fetch(`${apiBase}/${folder.name}`).then(r => r.json());
+    const mp3s = files.filter(f => f.name.toLowerCase().endsWith(".mp3"));
+
+    const piece = document.createElement("div");
+    piece.className = "piece";
+
+    const title = document.createElement("h2");
+    title.textContent = prettyTitle(folder.name);
+    piece.appendChild(title);
+
+    for (const mp3 of mp3s) {
+      const voice = document.createElement("div");
+      voice.className = "voice";
+
+      const label = document.createElement("p");
+      label.innerHTML = `<strong>${prettyVoice(mp3.name)}</strong>`;
+
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.src = `${rawBase}/${folder.name}/${mp3.name}`;
+
+      voice.appendChild(label);
+      voice.appendChild(audio);
+      piece.appendChild(voice);
+    }
+
+    library.appendChild(piece);
+  }
+}
+
+loadLibrary().catch(error => {
+  document.getElementById("library").innerHTML =
+    "Something went wrong while loading the audio folder. Check the GitHub username, repository name, and folder structure.";
+});
+</script>
 
 </body>
 </html>
