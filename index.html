@@ -185,11 +185,7 @@ button.resource {
   padding: 30px;
 }
 
-@media (min-width: 700px) {
-  .voice-list {
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
-  }
-}
+
 
 @media (max-width: 520px) {
   .piece {
@@ -277,10 +273,10 @@ function cleanLabel(fileName) {
 function voiceLabel(fileName) {
   const name = cleanLabel(fileName).toLowerCase();
 
-  if (/\b(sop|soprano|sopraan)\b/.test(name)) return "Sopraan";
-  if (/\b(alt|alto)\b/.test(name)) return "Alt";
-  if (/\b(ten|tenor)\b/.test(name)) return "Tenor";
-  if (/\b(bas|bass)\b/.test(name)) return "Bas";
+  if (/(^|\s)(sop|sopr|soprano|sopraan)(\s|$)/.test(name)) return "Sopraan";
+  if (/(^|\s)(alt|alto)(\s|$)/.test(name)) return "Alt";
+  if (/(^|\s)(ten|tenor)(\s|$)/.test(name)) return "Tenor";
+  if (/(^|\s)(bas|bass)(\s|$)/.test(name)) return "Bas";
 
   return cleanLabel(fileName)
     .replace(/^\d+\s*/, "")
@@ -412,7 +408,9 @@ function makePronunciation(file) {
   fragment.appendChild(playerWrap);
 
   return fragment;
-}function makeYoutubeLink(url) {
+}
+
+function makeYoutubeLink(url) {
   const link = document.createElement("a");
 
   link.className = "resource";
@@ -452,22 +450,20 @@ async function loadLibrary() {
     const pronunciation =
       audioFiles.find(file => isPronunciation(file.name));
 
-    const voices =
-      audioFiles
-        .filter(file => !isPronunciation(file.name))
-        .sort((a, b) => {
-  const order = {
-    "Sopraan": 1,
-    "Alt": 2,
-    "Tenor": 3,
-    "Bas": 4
-  };
+    const voiceOrder = {
+      "Sopraan": 1,
+      "Alt": 2,
+      "Tenor": 3,
+      "Bas": 4
+    };
 
-  return (
-    (order[voiceLabel(a.name)] ?? 99) -
-    (order[voiceLabel(b.name)] ?? 99)
-  );
-});
+    const voices = audioFiles
+      .filter(file => !isPronunciation(file.name))
+      .sort((a, b) => {
+        const aRank = voiceOrder[voiceLabel(a.name)] ?? 99;
+        const bRank = voiceOrder[voiceLabel(b.name)] ?? 99;
+        return aRank - bRank;
+      });
 
     const pdfs =
       files.filter(file =>
