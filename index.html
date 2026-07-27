@@ -38,9 +38,16 @@ h1 {
   font: bold 22px Georgia, serif;
 }
 
-.voice {
+.voice,
+.pronunciation {
   display: block;
   margin: 8px 0;
+}
+
+.pronunciation {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
 }
 
 button {
@@ -98,6 +105,18 @@ function voiceName(filename) {
   return null;
 }
 
+function isPronunciation(filename) {
+  const name = filename.toLowerCase();
+
+  return (
+    name.includes("uitspraak") ||
+    name.includes("pronunciation") ||
+    name.includes("prononciation") ||
+    name.includes("dictie") ||
+    name.includes("diction")
+  );
+}
+
 function voiceOrder(name) {
   return {
     "Sopraan": 1,
@@ -111,12 +130,12 @@ function titleFromFolder(folder) {
   return folder.replace(/\s*-\s*/g, " – ");
 }
 
-function makeVoice(file) {
+function makePlayer(file, label, className) {
   const wrapper = document.createElement("div");
-  wrapper.className = "voice";
+  wrapper.className = className;
 
   const button = document.createElement("button");
-  button.textContent = "▶ " + file.voice;
+  button.textContent = "▶ " + label;
 
   const audio = document.createElement("audio");
   audio.controls = true;
@@ -157,7 +176,8 @@ async function loadLibrary() {
   const prefix = AUDIO_FOLDER + "/";
 
   for (const item of data.tree) {
-    if (item.type !== "blob" || !item.path.startsWith(prefix)) continue;
+    if (item.type !== "blob") continue;
+    if (!item.path.startsWith(prefix)) continue;
     if (!item.path.toLowerCase().endsWith(".mp3")) continue;
 
     const relative = item.path.slice(prefix.length);
@@ -167,15 +187,31 @@ async function loadLibrary() {
 
     const folder = relative.slice(0, slash);
     const filename = relative.slice(slash + 1);
+
+    if (!pieces.has(folder)) {
+      pieces.set(folder, {
+        voices: [],
+        pronunciation: null
+      });
+    }
+
+    const piece = pieces.get(folder);
+
+    if (isPronunciation(filename)) {
+      piece.pronunciation = {
+        path: item.path
+      };
+      continue;
+    }
+
     const voice = voiceName(filename);
 
-    if (!voice) continue;
-
-    if (!pieces.has(folder)) pieces.set(folder, []);
-    pieces.get(folder).push({
-      path: item.path,
-      voice
-    });
+    if (voice) {
+      piece.voices.push({
+        path: item.path,
+        voice
+      });
+    }
   }
 
   library.innerHTML = "";
@@ -184,7 +220,7 @@ async function loadLibrary() {
     a[0].localeCompare(b[0], "nl", { numeric: true })
   );
 
-  for (const [folder, voices] of sortedPieces) {
+  for (const [folder, piece] of sortedPieces) {
     const section = document.createElement("section");
     section.className = "piece";
 
@@ -192,9 +228,23 @@ async function loadLibrary() {
     title.textContent = titleFromFolder(folder);
     section.appendChild(title);
 
-    voices
+    piece.voices
       .sort((a, b) => voiceOrder(a.voice) - voiceOrder(b.voice))
-      .forEach(file => section.appendChild(makeVoice(file)));
+      .forEach(file => {
+        section.appendChild(
+          makePlayer(file, file.voice, "voice")
+        );
+      });
+
+    if (piece.pronunciation) {
+      section.appendChild(
+        makePlayer(
+          piece.pronunciation,
+          "Uitspraak",
+          "pronunciation"
+        )
+      );
+    }
 
     library.appendChild(section);
   }
