@@ -277,10 +277,10 @@ function cleanLabel(fileName) {
 function voiceLabel(fileName) {
   const name = cleanLabel(fileName).toLowerCase();
 
-  if (/sop|sopr/.test(name)) return "Sopraan";
-  if (/\balt\b|alto/.test(name)) return "Alt";
-  if (/tenor/.test(name)) return "Tenor";
-  if (/\bbas\b|bass/.test(name)) return "Bas";
+  if (/\b(sop|soprano|sopraan)\b/.test(name)) return "Sopraan";
+  if (/\b(alt|alto)\b/.test(name)) return "Alt";
+  if (/\b(ten|tenor)\b/.test(name)) return "Tenor";
+  if (/\b(bas|bass)\b/.test(name)) return "Bas";
 
   return cleanLabel(fileName)
     .replace(/^\d+\s*/, "")
@@ -456,21 +456,18 @@ async function loadLibrary() {
       audioFiles
         .filter(file => !isPronunciation(file.name))
         .sort((a, b) => {
+  const order = {
+    "Sopraan": 1,
+    "Alt": 2,
+    "Tenor": 3,
+    "Bas": 4
+  };
 
-          const order = [
-            "Sopraan",
-            "Alt",
-            "Tenor",
-            "Bas"
-          ];
-
-          return (
-            order.indexOf(voiceLabel(a.name))
-            -
-            order.indexOf(voiceLabel(b.name))
-          );
-
-        });
+  return (
+    (order[voiceLabel(a.name)] ?? 99) -
+    (order[voiceLabel(b.name)] ?? 99)
+  );
+});
 
     const pdfs =
       files.filter(file =>
