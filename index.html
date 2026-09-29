@@ -80,6 +80,8 @@ video {
   text-align: center;
 }
 </style>
+<script data-goatcounter="https://alauda.goatcounter.com/count"
+        async src="https://gc.zgo.at/count.js"></script>
 </head>
 
 <body>
@@ -137,6 +139,15 @@ function titleFromFolder(folder) {
   return folder.replace(/\s*-\s*/g, " – ");
 }
 
+function countUse(piece, resource) {
+  if (!window.goatcounter || !window.goatcounter.count) return;
+  window.goatcounter.count({
+    path: `use/${piece}/${resource}`,
+    title: `${piece} – ${resource}`,
+    event: true
+  });
+}
+
 function stopOtherMedia(current) {
   document.querySelectorAll("audio, video").forEach(player => {
     if (player !== current) {
@@ -146,7 +157,7 @@ function stopOtherMedia(current) {
   });
 }
 
-function makePlayer(file, label, className) {
+function makePlayer(file, label, className, pieceTitle) {
   const wrapper = document.createElement("div");
   wrapper.className = className;
 
@@ -166,6 +177,7 @@ function makePlayer(file, label, className) {
       audio.style.display = "none";
     } else {
       audio.style.display = "block";
+      countUse(pieceTitle, label);
       audio.play().catch(() => {});
     }
   };
@@ -174,7 +186,7 @@ function makePlayer(file, label, className) {
   return wrapper;
 }
 
-function makeVideo(file) {
+function makeVideo(file, pieceTitle) {
   const wrapper = document.createElement("div");
   wrapper.className = "example";
 
@@ -194,6 +206,7 @@ function makeVideo(file) {
       video.style.display = "none";
     } else {
       video.style.display = "block";
+      countUse(pieceTitle, "Voorbeeld");
       video.play().catch(() => {});
     }
   };
@@ -272,15 +285,17 @@ async function loadLibrary() {
     const section = document.createElement("section");
     section.className = "piece";
 
+    const pieceTitle = titleFromFolder(folder);
+
     const title = document.createElement("h2");
-    title.textContent = titleFromFolder(folder);
+    title.textContent = pieceTitle;
     section.appendChild(title);
 
     piece.voices
       .sort((a, b) => voiceOrder(a.voice) - voiceOrder(b.voice))
       .forEach(file => {
         section.appendChild(
-          makePlayer(file, file.voice, "voice")
+          makePlayer(file, file.voice, "voice", pieceTitle)
         );
       });
 
@@ -289,14 +304,15 @@ async function loadLibrary() {
         makePlayer(
           piece.pronunciation,
           "Uitspraak",
-          "pronunciation"
+          "pronunciation",
+          pieceTitle
         )
       );
     }
 
     if (piece.video) {
       section.appendChild(
-        makeVideo(piece.video)
+        makeVideo(piece.video, pieceTitle)
       );
     }
 
