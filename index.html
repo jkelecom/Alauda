@@ -39,7 +39,8 @@ h1 {
 }
 
 .voice,
-.pronunciation {
+.pronunciation,
+.example {
   display: block;
   margin: 8px 0;
 }
@@ -63,10 +64,16 @@ button:hover {
   background: #eee;
 }
 
-audio {
+audio,
+video {
   display: none;
   width: 100%;
   margin-top: 8px;
+}
+
+video {
+  max-height: 480px;
+  background: black;
 }
 
 .error {
@@ -130,6 +137,15 @@ function titleFromFolder(folder) {
   return folder.replace(/\s*-\s*/g, " – ");
 }
 
+function stopOtherMedia(current) {
+  document.querySelectorAll("audio, video").forEach(player => {
+    if (player !== current) {
+      player.pause();
+      player.style.display = "none";
+    }
+  });
+}
+
 function makePlayer(file, label, className) {
   const wrapper = document.createElement("div");
   wrapper.className = className;
@@ -143,12 +159,7 @@ function makePlayer(file, label, className) {
   audio.src = rawUrl(file.path);
 
   button.onclick = () => {
-    document.querySelectorAll("audio").forEach(player => {
-      if (player !== audio) {
-        player.pause();
-        player.style.display = "none";
-      }
-    });
+    stopOtherMedia(audio);
 
     if (audio.style.display === "block") {
       audio.pause();
@@ -160,6 +171,34 @@ function makePlayer(file, label, className) {
   };
 
   wrapper.append(button, audio);
+  return wrapper;
+}
+
+function makeVideo(file) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "example";
+
+  const button = document.createElement("button");
+  button.textContent = "▶ Voorbeeld";
+
+  const video = document.createElement("video");
+  video.controls = true;
+  video.preload = "metadata";
+  video.src = rawUrl(file.path);
+
+  button.onclick = () => {
+    stopOtherMedia(video);
+
+    if (video.style.display === "block") {
+      video.pause();
+      video.style.display = "none";
+    } else {
+      video.style.display = "block";
+      video.play().catch(() => {});
+    }
+  };
+
+  wrapper.append(button, video);
   return wrapper;
 }
 
@@ -178,7 +217,8 @@ async function loadLibrary() {
   for (const item of data.tree) {
     if (item.type !== "blob") continue;
     if (!item.path.startsWith(prefix)) continue;
-    if (!item.path.toLowerCase().endsWith(".mp3")) continue;
+    const lowerPath = item.path.toLowerCase();
+    if (!lowerPath.endsWith(".mp3") && !lowerPath.endsWith(".mp4")) continue;
 
     const relative = item.path.slice(prefix.length);
     const slash = relative.indexOf("/");
@@ -191,11 +231,19 @@ async function loadLibrary() {
     if (!pieces.has(folder)) {
       pieces.set(folder, {
         voices: [],
-        pronunciation: null
+        pronunciation: null,
+        video: null
       });
     }
 
     const piece = pieces.get(folder);
+
+    if (filename.toLowerCase().endsWith(".mp4")) {
+      piece.video = {
+        path: item.path
+      };
+      continue;
+    }
 
     if (isPronunciation(filename)) {
       piece.pronunciation = {
@@ -243,6 +291,12 @@ async function loadLibrary() {
           "Uitspraak",
           "pronunciation"
         )
+      );
+    }
+
+    if (piece.video) {
+      section.appendChild(
+        makeVideo(piece.video)
       );
     }
 
